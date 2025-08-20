@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Content Manager</title>
+  <script>
+    // Only load Netlify Identity in non-local environments
+    (function(){
+      var isLocal = ['localhost','127.0.0.1'].includes(location.hostname);
+      if (!isLocal) {
+        var s = document.createElement('script');
+        s.src = 'https://identity.netlify.com/v1/netlify-identity-widget.js';
+        document.head.appendChild(s);
+      }
+    })();
+  </script>
+  <script>
+    // Prevent auto-fetch of config.yml; we'll inline the config instead
+    window.CMS_MANUAL_INIT = true;
+  </script>
+</head>
+<body>
+  <script src="https://unpkg.com/decap-cms@^3.0.0/dist/decap-cms.js"></script>
+  <script>
+    // Inline Decap CMS config to avoid network fetch of config.yml
+    (function(){
+      var isLocal = ['localhost','127.0.0.1'].includes(location.hostname);
+      var config = {
+        backend: { name: 'git-gateway', branch: 'main' },
+        media_folder: 'public/img',
+        public_folder: '/img',
+        publish_mode: 'editorial_workflow',
+        collections: [
+          {
+            name: 'posts',
+            label: 'Research Posts',
+            folder: 'content/posts',
+            create: true,
+            slug: '{{slug}}',
+            fields: [
+              { label: 'Title', name: 'title', widget: 'string' },
+              { label: 'Date', name: 'date', widget: 'datetime' },
+              { label: 'Author', name: 'author', widget: 'string' },
+              { label: 'Summary', name: 'summary', widget: 'string' },
+              { label: 'Body', name: 'body', widget: 'markdown' },
+              { label: 'Tags', name: 'tags', widget: 'list', field: { label: 'Tag', name: 'tag', widget: 'string' } },
+              { label: 'Category', name: 'category', widget: 'select', options: ['AI Research', 'Agentic AI', 'Machine Learning', 'Robotics', 'General Research'] },
+              { label: 'Research Status', name: 'status', widget: 'select', options: ['Draft', 'In Progress', 'Peer Review', 'Published', 'Archived'] },
+              { label: 'SEO Description', name: 'seo_description', widget: 'text' },
+              { label: 'Keywords', name: 'keywords', widget: 'list', field: { label: 'Keyword', name: 'keyword', widget: 'string' } },
+              { label: 'Featured Image', name: 'featured_image', widget: 'image', required: false },
+              { label: 'Research Team', name: 'research_team', widget: 'list', field: { label: 'Member', name: 'member', widget: 'string' } },
+              { label: 'Citations', name: 'citations', widget: 'list', field: { label: 'Citation', name: 'citation', widget: 'text' } },
+              { label: 'GitHub Repository', name: 'github_repo', widget: 'string', required: false },
+              { label: 'DOI', name: 'doi', widget: 'string', required: false },
+            ],
+          },
+          {
+            name: 'research_projects',
+            label: 'Research Projects',
+            folder: 'content/research_projects',
+            create: true,
+            slug: '{{slug}}',
+            fields: [
+              { label: 'Project Title', name: 'title', widget: 'string' },
+              { label: 'Description', name: 'description', widget: 'text' },
+              { label: 'Start Date', name: 'start_date', widget: 'datetime' },
+              { label: 'End Date', name: 'end_date', widget: 'datetime', required: false },
+              { label: 'Status', name: 'status', widget: 'select', options: ['Planning', 'Active', 'On Hold', 'Completed', 'Archived'] },
+              { label: 'Team Members', name: 'team', widget: 'list', field: { label: 'Member', name: 'member', widget: 'string' } },
+              { label: 'GitHub Repositories', name: 'github_repos', widget: 'list', field: { label: 'Repository', name: 'repo', widget: 'string' } },
+              { label: 'Research Papers', name: 'papers', widget: 'list', field: { label: 'Paper', name: 'paper', widget: 'string' } },
+              { label: 'Funding', name: 'funding', widget: 'text', required: false },
+            ],
+          },
+          {
+            name: 'ai_agents',
+            label: 'AI Agents',
+            folder: 'content/ai_agents',
+            create: true,
+            slug: '{{slug}}',
+            fields: [
+              { label: 'Agent Name', name: 'name', widget: 'string' },
+              { label: 'Description', name: 'description', widget: 'text' },
+              { label: 'Capabilities', name: 'capabilities', widget: 'list', field: { label: 'Capability', name: 'capability', widget: 'string' } },
+              { label: 'Use Cases', name: 'use_cases', widget: 'list', field: { label: 'Use Case', name: 'use_case', widget: 'string' } },
+              { label: 'GitHub Repository', name: 'github_repo', widget: 'string' },
+              { label: 'Documentation', name: 'documentation', widget: 'string', required: false },
+              { label: 'Status', name: 'status', widget: 'select', options: ['Development', 'Testing', 'Production', 'Deprecated'] },
+            ],
+          },
+        ],
+      };
+
+      // When running locally with `npx decap-server`, use the local backend proxy
+      if (isLocal) {
+        config.local_backend = true; // reads/writes to filesystem via proxy on :8081
+      }
+
+      CMS.init({ config: config });
+    })();
+  </script>
+</body>
+</html>
