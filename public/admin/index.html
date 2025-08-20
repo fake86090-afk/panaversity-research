@@ -114,5 +114,214 @@
       CMS.init({ config: config });
     })();
   </script>
+  
+  <!-- Minimal uploader to import a local Markdown file into GitHub posts -->
+  <script>
+    (function(){
+      const bar = document.createElement('div');
+      bar.style.position = 'fixed';
+      bar.style.bottom = '14px';
+      bar.style.right = '14px';
+      bar.style.zIndex = '9999';
+      bar.style.display = 'flex';
+      bar.style.gap = '8px';
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.md,.mdx,text/markdown';
+      input.style.padding = '6px 8px';
+      input.style.background = '#fff';
+      input.style.border = '1px solid #e5e7eb';
+      input.style.borderRadius = '6px';
+
+      const btn = document.createElement('button');
+      btn.textContent = 'Import Markdown → GitHub';
+      btn.style.padding = '6px 10px';
+      btn.style.background = '#111827';
+      btn.style.color = '#fff';
+      btn.style.border = 'none';
+      btn.style.borderRadius = '6px';
+      btn.style.cursor = 'pointer';
+
+      async function upload() {
+        const file = input.files && input.files[0];
+        if (!file) { alert('Choose a Markdown file first.'); return; }
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const res = await fetch('/api/import-md', { method: 'POST', body: fd });
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error || 'Upload failed');
+          alert('Imported as ' + json.path);
+          location.reload();
+        } catch (e) {
+          alert('Import failed: ' + (e?.message || e));
+        }
+      }
+
+      btn.addEventListener('click', upload);
+      bar.appendChild(input);
+      bar.appendChild(btn);
+      document.body.appendChild(bar);
+    })();
+  </script>
+
+  <!-- Markdown → Decap Post converter (client-side only) -->
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script>
+    (function(){
+      function toSlug(input){
+        return String(input || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9\s-]/g, "")
+          .trim()
+          .replace(/\s+/g, "-");
+      }
+
+      function parseFrontmatter(md){
+        const fmMatch = md.match(/^---\n([\s\S]*?)\n---\n?/);
+        if (!fmMatch) return { data: {}, content: md };
+        const yaml = fmMatch[1];
+        const rest = md.slice(fmMatch[0].length);
+        let data = {};
+        try { data = window.jsyaml.load(yaml) || {}; } catch(e){ data = {}; }
+        return { data, content: rest };
+      }
+
+      const wrap = document.createElement('div');
+      wrap.style.position = 'fixed';
+      wrap.style.bottom = '14px';
+      wrap.style.left = '14px';
+      wrap.style.zIndex = '9999';
+      wrap.style.background = '#ffffff';
+      wrap.style.border = '1px solid #e5e7eb';
+      wrap.style.borderRadius = '8px';
+      wrap.style.padding = '10px';
+      wrap.style.maxWidth = '380px';
+      wrap.style.boxShadow = '0 4px 14px rgba(0,0,0,0.08)';
+
+      const title = document.createElement('div');
+      title.textContent = 'Markdown → Post (convert only)';
+      title.style.fontWeight = '600';
+      title.style.marginBottom = '8px';
+
+      const file = document.createElement('input');
+      file.type = 'file';
+      file.accept = '.md,.mdx,text/markdown';
+      file.style.marginBottom = '8px';
+
+      const convertBtn = document.createElement('button');
+      convertBtn.textContent = 'Convert';
+      convertBtn.style.marginLeft = '8px';
+      convertBtn.style.padding = '6px 10px';
+      convertBtn.style.background = '#111827';
+      convertBtn.style.color = '#fff';
+      convertBtn.style.border = 'none';
+      convertBtn.style.borderRadius = '6px';
+      convertBtn.style.cursor = 'pointer';
+
+      const out = document.createElement('div');
+      out.style.marginTop = '10px';
+      out.style.fontSize = '12px';
+      out.style.color = '#111827';
+
+      async function convert(){
+        const f = file.files && file.files[0];
+        if (!f) { alert('Choose a Markdown file first.'); return; }
+        const text = await f.text();
+        const { data, content } = parseFrontmatter(text);
+        const base = (f.name || '').replace(/\.(md|mdx)$/i, '');
+        const title = data.title || base;
+        const slug = toSlug(base || title);
+        const date = data.date || new Date().toISOString();
+        const author = data.author || '';
+        const summary = data.summary || '';
+        const body = content.trim();
+
+        out.innerHTML = '';
+        const makeRow = (label, value) => {
+          const row = document.createElement('div');
+          row.style.marginBottom = '6px';
+          const lab = document.createElement('div');
+          lab.textContent = label;
+          lab.style.fontWeight = '600';
+          lab.style.marginBottom = '2px';
+          const ta = document.createElement('textarea');
+          ta.value = value || '';
+          ta.rows = 2;
+          ta.style.width = '100%';
+          ta.style.fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+          ta.style.fontSize = '12px';
+          ta.addEventListener('focus', () => ta.select());
+          const copy = document.createElement('button');
+          copy.textContent = 'Copy';
+          copy.style.marginTop = '4px';
+          copy.style.padding = '4px 8px';
+          copy.style.border = '1px solid #e5e7eb';
+          copy.style.borderRadius = '6px';
+          copy.addEventListener('click', () => { ta.select(); document.execCommand('copy'); });
+          row.appendChild(lab);
+          row.appendChild(ta);
+          row.appendChild(copy);
+          return { row, ta };
+        };
+
+        const rows = [
+          makeRow('Title', title),
+          makeRow('Date (ISO)', date),
+          makeRow('Author', author),
+          makeRow('Summary', summary),
+        ];
+        const bodyRow = makeRow('Body (Markdown)', body);
+        bodyRow.ta.rows = 6;
+        rows.push(bodyRow);
+
+        rows.forEach(r => out.appendChild(r.row));
+
+        const openBtn = document.createElement('button');
+        openBtn.textContent = 'Open “New Post” and try auto-fill';
+        openBtn.style.marginTop = '6px';
+        openBtn.style.padding = '6px 10px';
+        openBtn.style.background = '#2563eb';
+        openBtn.style.color = '#fff';
+        openBtn.style.border = 'none';
+        openBtn.style.borderRadius = '6px';
+        openBtn.style.cursor = 'pointer';
+        openBtn.addEventListener('click', () => {
+          location.hash = '#/collections/posts/new';
+          // best-effort auto-fill after the editor mounts
+          setTimeout(() => {
+            try {
+              const inputs = document.querySelectorAll('input, textarea');
+              const setFirst = (needle, value) => {
+                for (const el of inputs){
+                  const id = el.getAttribute('id') || '';
+                  const name = el.getAttribute('name') || '';
+                  const aria = el.getAttribute('aria-label') || '';
+                  const text = (id + ' ' + name + ' ' + aria).toLowerCase();
+                  if (text.includes(needle)) { (el as HTMLInputElement).value = value; (el as HTMLInputElement).dispatchEvent(new Event('input', { bubbles: true })); break; }
+                }
+              };
+              setFirst('title', title);
+              setFirst('date', date);
+              setFirst('author', author);
+              setFirst('summary', summary);
+              // body is a markdown editor; paste into first textarea as fallback
+              const firstTa = document.querySelector('textarea');
+              if (firstTa){ (firstTa as HTMLTextAreaElement).value = body; firstTa.dispatchEvent(new Event('input', { bubbles: true })); }
+            } catch {}
+          }, 1200);
+        });
+        out.appendChild(openBtn);
+      }
+
+      convertBtn.addEventListener('click', convert);
+      wrap.appendChild(title);
+      wrap.appendChild(file);
+      wrap.appendChild(convertBtn);
+      wrap.appendChild(out);
+      document.body.appendChild(wrap);
+    })();
+  </script>
 </body>
 </html>
