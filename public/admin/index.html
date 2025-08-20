@@ -98,9 +98,17 @@
         ],
       };
 
-      // When running locally with `npx decap-server`, use the local backend proxy
+      // When running locally, use GitHub backend for testing OAuth
       if (isLocal) {
-        config.local_backend = true; // reads/writes to filesystem via proxy on :8081
+        // Use GitHub backend for local OAuth testing
+        config.backend = { 
+          name: 'github', 
+          repo: 'fake86090-afk/panaversity-research', // Your actual repository
+          branch: 'main',
+          use_graphql: true
+        };
+        // Remove local_backend for GitHub testing
+        // config.local_backend = true; // uncomment this line if you want to use local proxy instead
       }
 
       CMS.init({ config: config });

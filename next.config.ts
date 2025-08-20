@@ -8,12 +8,14 @@ const nextConfig: NextConfig = {
       { source: "/admin/", destination: "/admin/index.html" },
     ];
   },
-  // Production optimization for research.panaversity.org
-  output: 'export',
-  trailingSlash: true,
-  images: {
-    unoptimized: true,
-  },
+  // Development vs Production configuration
+  ...(process.env.NODE_ENV === 'production' ? {
+    output: 'export',
+    trailingSlash: true,
+    images: {
+      unoptimized: true,
+    },
+  } : {}),
   // Environment variables for GitHub integration
   env: {
     GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
