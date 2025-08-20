@@ -5,8 +5,12 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
+    "build:static": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "export": "next build",
+    "deploy:preview": "npm run build && npx serve out",
+    "deploy:check": "npm run build && npx next-sitemap"
   },
   "dependencies": {
     "gray-matter": "^4.0.3",
