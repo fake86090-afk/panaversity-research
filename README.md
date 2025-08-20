@@ -42,8 +42,8 @@ A comprehensive research management platform built with Next.js 15 (App Router) 
    ```
 
 2. **Start Development Server**
-   ```bash
-   npm run dev
+```bash
+npm run dev
    ```
 
 3. **Start Decap CMS Proxy** (in another terminal)
